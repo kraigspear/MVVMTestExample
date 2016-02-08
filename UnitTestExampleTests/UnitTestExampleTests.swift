@@ -11,26 +11,70 @@ import XCTest
 
 class UnitTestExampleTests: XCTestCase {
     
+    class ViewMock: AgeViewable {
+        
+        var firstName: String?
+        var lastName: String?
+        var birthDate: String?
+        var ageResult: String?
+        
+        var _error: String?
+        func showError(error: String) {
+            _error = error
+        }
+    }
+    
+    class DateFetchMock: CurrentDateFetchable {
+        
+        var date: NSDate?
+        
+        func currentDate() -> NSDate {
+            XCTAssertNotNil(date, "You should really set the date first")
+            return date!
+        }
+    }
+    
+    
+    var viewModel: ViewModel!
+    var viewMock: ViewMock!
+    var dateFetcher: DateFetchMock!
+    
     override func setUp() {
         super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+        viewMock = ViewMock()
+        dateFetcher = DateFetchMock()
+        viewModel = ViewModel(delegate: viewMock, currentDateFetchable: dateFetcher)
     }
     
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        viewMock = nil
+        viewModel = nil
         super.tearDown()
     }
     
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    func testAgeIsCorrect() {
+        viewMock.firstName = "Johnny"
+        viewMock.lastName = "Appleseed"
+        viewMock.birthDate = "1/1/1980"
+        
+        let feb8th2016: NSTimeInterval = 1454959998
+        dateFetcher.date = NSDate(timeIntervalSince1970: feb8th2016)
+        
+        viewModel.calcAge()
+        
+        let expectedMessage = "Appleseed, Johnny You are 36 years old"
+        
+        XCTAssertNotNil(viewMock.ageResult)
+        print(viewMock.ageResult!)
+        XCTAssertEqual(expectedMessage, viewMock.ageResult!)
+        
     }
     
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measureBlock {
-            // Put the code you want to measure the time of here.
-        }
+    func testErrorOccuresWhenDateIsEmpty() {
+        viewMock.firstName = "Johnny"
+        viewMock.lastName = "Appleseed"
+        viewModel.calcAge()
+        XCTAssertNotNil(viewMock._error)
     }
     
 }
